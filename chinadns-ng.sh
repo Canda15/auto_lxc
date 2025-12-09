@@ -13,7 +13,7 @@ echo -e "${GREEN}>>> 开始安装 ChinaDNS-NG for Debian 13 (x86-64v3)...${NC}"
 # 1. 检查并安装必要依赖
 echo -e "${YELLOW}>>> 安装必要依赖 (curl, wget, jq)...${NC}"
 apt-get update
-apt-get install -y curl wget jq tar
+apt-get install -y curl wget jq
 
 # 2. 创建安装目录
 if [ ! -d "$WORK_DIR" ]; then
@@ -30,19 +30,21 @@ if [ -z "$LATEST_RELEASE_URL" ]; then
     exit 1
 fi
 
-# 4. 下载并解压
+# 4. 下载主程序 (直接是二进制文件，无需解压)
 cd "$WORK_DIR"
-echo -e "${YELLOW}>>> 下载并解压主程序...${NC}"
-wget -qO chinadns-ng.tar.gz "$LATEST_RELEASE_URL"
-# 只释放 chinadns-ng 运行文件
-tar -zxvf chinadns-ng.tar.gz chinadns-ng
-rm chinadns-ng.tar.gz
-chmod +x chinadns-ng
+echo -e "${YELLOW}>>> 下载主程序...${NC}"
 
-if [ ! -f "$WORK_DIR/chinadns-ng" ]; then
-    echo -e "${RED}>>> 错误: 主程序解压失败。${NC}"
+# 删除旧文件（如果存在）
+rm -f chinadns-ng
+
+wget -qO chinadns-ng "$LATEST_RELEASE_URL"
+
+if [ ! -s "chinadns-ng" ]; then
+    echo -e "${RED}>>> 错误: 文件下载失败或为空。${NC}"
     exit 1
 fi
+
+chmod +x chinadns-ng
 
 # 5. 下载辅助脚本
 echo -e "${YELLOW}>>> 下载依赖更新脚本...${NC}"
