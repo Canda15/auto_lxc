@@ -48,7 +48,7 @@ chmod +x chinadns-ng
 
 # 5. 下载辅助脚本
 echo -e "${YELLOW}>>> 下载依赖更新脚本...${NC}"
-SCRIPT_BASE_URL="https://raw.githubusercontent.com/zfl9/chinadns-ng/master"
+SCRIPT_BASE_URL="https://raw.githubusercontent.com/zfl9/chinadns-ng/master/res"
 SCRIPTS=("update-chnlist.sh" "update-gfwlist.sh" "update-chnroute6-nft.sh" "update-chnroute-nft.sh")
 
 for script in "${SCRIPTS[@]}"; do
