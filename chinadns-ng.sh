@@ -79,22 +79,25 @@ chmod +x "$WORK_DIR/update-all.sh"
 echo -e "${YELLOW}>>> 正在运行首次更新 (拉取依赖)...${NC}"
 bash "$WORK_DIR/update-all.sh"
 
+
 # 8. 下载并配置运行参数
 echo -e "${YELLOW}>>> 下载并配置运行参数...${NC}"
 # 使用 Raw 链接下载
-CONFIG_URL="https://raw.githubusercontent.com/ddd-zero/smartdns_install/main/%E5%85%B6%E4%BB%96/cnng"
+CONFIG_URL="https://raw.githubusercontent.com/ddd-zero/smartdns_install/main/%E5%85%B6%E4%BB%96/chinadns-ng"
 CONFIG_FILE="$WORK_DIR/config"
 
-RAW_ARGS=$(curl -s "$CONFIG_URL")
+# 直接将远程内容下载覆盖到 CONFIG_FILE
+# -o: 将下载内容直接写入指定文件
+# -s: 静默模式
+curl -s -o "$CONFIG_FILE" "$CONFIG_URL"
 
-if [ -z "$RAW_ARGS" ]; then
-    echo -e "${RED}>>> 警告: 配置文件下载失败，使用默认空配置。${NC}"
-    echo 'CHINADNS_ARGS=""' > "$CONFIG_FILE"
-else
-    # 清理换行符并将内容赋值给 CHINADNS_ARGS 变量，以便 Systemd 读取
-    CLEAN_ARGS=$(echo "$RAW_ARGS" | tr -d '\n' | tr -d '\r')
-    echo "CHINADNS_ARGS=\"$CLEAN_ARGS\"" > "$CONFIG_FILE"
+# 检查文件是否存在且不为空 (-s 参数检查文件大小是否大于0)
+if [ -s "$CONFIG_FILE" ]; then
     echo -e "${GREEN}>>> 配置文件已保存至: $CONFIG_FILE${NC}"
+else
+    echo -e "${RED}>>> 警告: 配置文件下载失败或内容为空。${NC}"
+    # 如果下载失败，创建一个空文件以防报错（可选）
+    touch "$CONFIG_FILE"
 fi
 
 # 9. 配置 Systemd 服务
