@@ -11,7 +11,7 @@ echo -e "${GREEN}>>> 开始安装 ChinaDNS-NG for Debian 13 (x86-64v3)...${NC}"
 # 1. 检查并安装必要依赖
 echo -e "${YELLOW}>>> 安装必要依赖 (curl, wget, jq, nftables)...${NC}"
 apt-get update
-apt-get install -y curl wget jq nftables tar
+apt-get install -y curl wget jq tar
 
 # 2. 创建安装目录
 WORK_DIR="/opt/chinadns-ng"
@@ -60,8 +60,6 @@ for script in "${SCRIPTS[@]}"; do
 done
 
 # 6. 生成一键更新脚本 (update-all.sh)
-# 注意：你的 systemd 文件引用的是 .nftset 后缀，而官方脚本生成的是 .nft 后缀
-# 所以这里我们在 update-all.sh 中增加了重命名操作
 echo -e "${YELLOW}>>> 生成一键更新脚本 update-all.sh...${NC}"
 cat > "$WORK_DIR/update-all.sh" <<EOF
 #!/bin/bash
