@@ -11,7 +11,7 @@ WORK_DIR="/opt/chinadns-ng"
 echo -e "${GREEN}>>> 开始安装 ChinaDNS-NG for Debian 13 (x86-64v3)...${NC}"
 
 # 1. 检查并安装必要依赖
-echo -e "${YELLOW}>>> 安装必要依赖 (curl, wget, jq, nftables)...${NC}"
+echo -e "${YELLOW}>>> 安装必要依赖 (curl, wget, jq)...${NC}"
 apt-get update
 apt-get install -y curl wget jq tar
 
