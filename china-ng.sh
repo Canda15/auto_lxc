@@ -23,7 +23,7 @@ fi
 
 # 3. 获取最新版本下载地址 (x86-64v3)
 echo -e "${YELLOW}>>> 获取 GitHub 最新版本信息...${NC}"
-LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/zfl9/chinadns-ng/releases/latest" | jq -r '.assets[] | select(.name | contains("linux-x86_64v3") and (contains("wolfssl")|not)) | .browser_download_url')
+LATEST_RELEASE_URL=$(curl -s "https://api.github.com/repos/zfl9/chinadns-ng/releases/latest" | jq -r '.assets[] | select(.name | contains("linux-musl@x86_64_v3") and (contains("wolfssl")|not)) | .browser_download_url')
 
 if [ -z "$LATEST_RELEASE_URL" ]; then
     echo -e "${RED}>>> 错误: 未找到 x86-64v3 版本的下载链接。${NC}"
