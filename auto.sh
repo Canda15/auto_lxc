@@ -108,8 +108,7 @@ function set_time_and_ntp() {
         echo -e "${GREEN}✔ systemd-timesyncd 正在运行 (Active)。${PLAIN}"
         # 显示详细的时间状态
         echo -e "${SKYBLUE}--- 时间同步状态 (timedatectl) ---${PLAIN}"
-        timedatectl show -p NTP --value | grep -q "yes" && echo "NTP enabled: yes" || echo "NTP enabled: no"
-        timedatectl timesync-status --no-pager 2>/dev/null || echo "正在同步中..."
+        timedatectl status | grep -E "System clock synchronized|NTP service" | sed 's/^[ \t]*//'
     else
         echo -e "${RED}✘ systemd-timesyncd 启动失败，请检查系统日志。${PLAIN}"
     fi
