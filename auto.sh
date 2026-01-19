@@ -293,18 +293,33 @@ function apt_cleanup() {
     echo -e "${GREEN}✔ apt 清理完成。${PLAIN}"
 }
 
+# =================================================================
+# 任务调度核心
+# =================================================================
 
-# 执行所有任务
+# 执行单个任务的函数（根据ID）
+function execute_task() {
+    local task_id=$1
+	local mode=$2
+    case "$task_id" in
+        1) limit_journald ;;
+        2) configure_dpkg_exclude ;;
+        3) strip_locales ;;
+        4) set_time_and_ntp ;;
+        5) log_cleaner ;;
+        6) install_smartdns "$mode" ;;
+        7) setup_vps_security ;;
+        8) apt_cleanup ;;
+        *) echo -e "${RED}忽略未知任务 ID: $task_id ${PLAIN}" ;;
+    esac
+}
+
+# 一键执行所有
 function run_all() {
-    echo -e "${SKYBLUE}>>> 开始执行所有优化步骤...${PLAIN}"
-    limit_journald
-    configure_dpkg_exclude
-    strip_locales
-    set_time_and_ntp
-    log_cleaner
-    setup_vps_security
-    install_smartdns "auto"
-    apt_cleanup
+    echo -e "${SKYBLUE}>>> 开始执行所有优化步骤 (1-8)...${PLAIN}"
+    for i in {1..8}; do
+        execute_task "$i" "auto" # 【修复】传入 auto 参数，跳过已安装的 smartdns
+    done
     echo -e "${GREEN}>>> 所有操作已成功完成！${PLAIN}"
 }
 
@@ -313,7 +328,6 @@ function run_all() {
 # =================================================================
 while true; do
     clear
-    
     echo -e "${SKYBLUE}=============================================${PLAIN}"
     echo -e "${SKYBLUE}       Linux 系统精简与优化脚本       ${PLAIN}"
     echo -e "${SKYBLUE}=============================================${PLAIN}"
@@ -322,7 +336,7 @@ while true; do
     echo -e "${YELLOW} 系统版本 : ${SKYBLUE}${VERSION:-未检测到}${PLAIN}"
     echo -e "${SKYBLUE}---------------------------------------------${PLAIN}"
     
-    echo -e "${GREEN} 0. 一键执行所有优化 (推荐)${PLAIN}"
+    echo -e "${GREEN} 0. 一键执行所有优化 (1-8)${PLAIN}"
     echo -e "---------------------------------------------"
     echo -e "${GREEN} 1.${PLAIN} 限制 journald 日志大小为 64M"
     echo -e "${GREEN} 2.${PLAIN} 配置 dpkg 排除文档/Man/Info文件"
@@ -335,55 +349,80 @@ while true; do
     echo -e "---------------------------------------------"
     echo -e "${GREEN} q.${PLAIN} 退出脚本"
     echo -e "${SKYBLUE}=============================================${PLAIN}"
+    echo -e "${YELLOW}提示: 支持多选 (如 \"1 3\") 或 排除 (如 \"-1\" 表示除了1以外全做，\"-1 2\" 表示排除1和2)${PLAIN}"
     echo
 
-    read -p "请输入选项数字 [0-8]: " choice
+    read -p "请输入选项: " -a choices # 读取为数组
     echo
 
-    case "$choice" in
-        0)
-            run_all
-            break 
-            ;;
-        1)
-            limit_journald
+    # 1. 处理退出
+    if [[ "${choices[0]}" =~ ^[qQ]$ ]]; then
+        echo "已退出。"
+        exit 0
+    fi
+
+    # 2. 处理 "0" (Run All)
+    if [[ "${choices[0]}" == "0" ]]; then
+        run_all
+        break
+    fi
+
+    # 3. 解析输入模式 (普通多选 OR 排除模式)
+    # 只要输入中包含任何带 "-" 的数字，就视为排除模式 (Run All minus x)
+    exclude_mode=false
+    for choice in "${choices[@]}"; do
+        if [[ "$choice" == -* ]]; then
+            exclude_mode=true
             break
-            ;;
-        2)
-            configure_dpkg_exclude
-            break
-            ;;
-        3)
-            strip_locales
-            break
-            ;;
-        4)
-            set_time_and_ntp
-            break
-            ;;
-        5)
-            log_cleaner
-            break
-            ;;
-        6)
-            install_smartdns
-            break
-            ;;
-        7)
-            setup_vps_security
-            break
-            ;;
-        8)
-            apt_cleanup
-            break
-            ;;
-        q|Q)
-            echo "已退出。"
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}错误：输入了无效的选项 \"$choice\"，请重新输入 0-8 之间的数字。${PLAIN}"
-            sleep 1
-            ;;
-    esac
+        fi
+    done
+
+    # 4. 构建任务队列
+    tasks_to_run=()
+    if [ "$exclude_mode" = true ]; then
+        echo -e "${SKYBLUE}>>> 识别为[排除模式]，将执行除指定项外的所有任务...${PLAIN}"
+        # 遍历 1 到 8
+        for i in {1..8}; do
+            skip=false
+            for choice in "${choices[@]}"; do
+                # 去掉负号取绝对值 (如 -1 变为 1, 2 变为 2)
+                # 这样输入 "-1 2" 或 "-1 -2" 都能正确排除 1 和 2
+                abs_choice=${choice#-} 
+                if [[ "$i" == "$abs_choice" ]]; then
+                    skip=true
+                    break
+                fi
+            done
+            
+            if [ "$skip" = false ]; then
+                tasks_to_run+=("$i")
+            fi
+        done
+    else
+        # 普通多选模式，按 1-8 的顺序检查用户是否输入了该数字
+        # 这样做的好处是执行顺序固定为 1->8，避免依赖关系出错
+        echo -e "${SKYBLUE}>>> 识别为[多选模式]...${PLAIN}"
+        for i in {1..8}; do
+            for choice in "${choices[@]}"; do
+                if [[ "$i" == "$choice" ]]; then
+                    tasks_to_run+=("$i")
+                    break
+                fi
+            done
+        done
+    fi
+
+    # 5. 执行队列中的任务
+    if [ ${#tasks_to_run[@]} -eq 0 ]; then
+        echo -e "${RED}未选择任何有效任务，请重新输入。${PLAIN}"
+        sleep 1
+    else
+        echo -e "${SKYBLUE}即将执行的任务 ID: ${tasks_to_run[*]}${PLAIN}"
+        echo
+        for task_id in "${tasks_to_run[@]}"; do
+            execute_task "$task_id" "" 
+        done
+        echo -e "${GREEN}>>> 指定任务已全部完成！${PLAIN}"
+        break 
+    fi
 done
